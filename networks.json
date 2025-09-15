@@ -1,0 +1,10 @@
+[
+  {
+    "id": "GiwaTestnet-91342",
+    "displayName": "GiwaTestnet",
+    "network_name": "GiwaTestnet",
+    "rpc_url": "https://sepolia-rpc.giwa.io/",
+    "chain_id": "91342",
+    "explorer_url": "https://sepolia-explorer.giwa.io"
+  }
+]
