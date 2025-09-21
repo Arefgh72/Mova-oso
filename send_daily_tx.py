@@ -90,7 +90,9 @@ def run_operations_on_network(network_config):
                 'chainId': chain_id
             }
             signed_tx = w3.eth.account.sign_transaction(tx, private_key_1)
-            tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            # -----------------  تغییر اول اینجاست  -----------------
+            tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+            # ----------------------------------------------------
             print(f"  ({i+1}/10) تراکنش ارسال شد: {w3.to_hex(tx_hash)}")
             
             # تاخیر تصادفی
@@ -100,7 +102,6 @@ def run_operations_on_network(network_config):
 
         except Exception as e:
             print(f"  خطا در ارسال تراکنش شماره {i+1}: {e}")
-            # اگر یک تراکنش خطا داد، بهتر است ادامه ندهیم
             print("عملیات روی این شبکه متوقف شد.")
             return
 
@@ -114,7 +115,6 @@ def run_operations_on_network(network_config):
 
     try:
         wallet_2 = w3.eth.account.from_key(private_key_2)
-        # مطمئن میشویم که آدرس مشتق شده از کلید با آدرس در فایل یکی است
         if wallet_2.address.lower() != address_2.lower():
             print(f"خطای امنیتی: کلید خصوصی دوم با آدرس {address_2} مطابقت ندارد!")
             return
@@ -130,7 +130,6 @@ def run_operations_on_network(network_config):
         gas_limit = 21000
         tx_fee = gas_limit * gas_price
         
-        # اگر موجودی کمتر از هزینه تراکنش باشد
         if balance <= tx_fee:
             print("موجودی برای پوشش هزینه تراکنش کافی نیست.")
             return
@@ -148,10 +147,11 @@ def run_operations_on_network(network_config):
         }
         
         signed_sweep_tx = w3.eth.account.sign_transaction(sweep_tx, private_key_2)
-        sweep_tx_hash = w3.eth.send_raw_transaction(signed_sweep_tx.rawTransaction)
+        # -----------------  تغییر دوم اینجاست  -----------------
+        sweep_tx_hash = w3.eth.send_raw_transaction(signed_sweep_tx.raw_transaction)
+        # ---------------------------------------------------
         print(f"تراکنش بازگشتی ارسال شد: {w3.to_hex(sweep_tx_hash)}")
         
-        # منتظر تایید تراکنش بازگشتی می‌مانیم
         receipt = wait_for_receipt(w3, sweep_tx_hash)
         if receipt and receipt.status == 1:
             print(">> مرحله ۲ با موفقیت انجام شد. موجودی به کیف پول اصلی بازگشت.")
@@ -160,7 +160,6 @@ def run_operations_on_network(network_config):
 
     except Exception as e:
         print(f"خطا در مرحله بازگرداندن موجودی: {e}")
-
 
 # --- نقطه شروع برنامه ---
 
