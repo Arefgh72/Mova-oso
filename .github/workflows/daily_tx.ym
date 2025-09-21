@@ -1,0 +1,33 @@
+name: Multi-Network Crypto Operations
+
+on:
+  schedule:
+    # اجرا هر ۶ ساعت (۴ بار در روز)
+    # در ساعات 00:00, 06:00, 12:00, 18:00 UTC
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-operations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Execute transaction script
+        env:
+          # کلید خصوصی کیف پول اول (اصلی)
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          # کلید خصوصی کیف پول دوم (برای تراکنش بازگشتی)
+          PRIVATE_KEY_WALLET_2: ${{ secrets.PRIVATE_KEY_WALLET_2 }}
+        # اینجا اسم فایل پایتون خودتان را بگذارید
+        run: python send_daily_tx.py
