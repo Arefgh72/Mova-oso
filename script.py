@@ -13,17 +13,18 @@ def compile_contract(file_path, contract_name):
     """
     solc_version = '0.8.20'
     print(f"در حال کامپایل کردن {file_path} با solc نسخه {solc_version}...")
-    
+
     # نصب و تنظیم نسخه دقیق کامپایلر
     install_solc(solc_version)
     set_solc_version(solc_version)
-    
-    # کامپایل فایل بدون نیاز به remapping چون تمام کدها در یک فایل هستند
+
+    # 👇 اینجا evm_version اضافه شد (بقیه کد دست نخورده)
     compiled_sol = compile_files(
         [file_path],
-        output_values=['abi', 'bin']
+        output_values=['abi', 'bin'],
+        evm_version='istanbul'  # یا berlin یا london
     )
-    
+
     contract_id = f"{file_path}:{contract_name}"
     abi = compiled_sol[contract_id]['abi']
     bytecode = compiled_sol[contract_id]['bin']
@@ -40,19 +41,23 @@ def deploy_contract(w3, account, chain_id, abi, bytecode, contract_name, contrac
     """یک قرارداد هوشمند را دیپلوی کرده و آدرس آن را برمی‌گرداند."""
     private_key = os.environ.get('PRIVATE_KEY')
     contract = w3.eth.contract(abi=abi, bytecode=bytecode)
-    
+
+    # 👇 تخمین گس به جای ثابت
+    gas_estimate = contract.constructor(contract_name, contract_symbol).estimate_gas({'from': account.address})
+    gas_limit = int(gas_estimate * 1.3)  # ۳۰٪ بیشتر برای اطمینان
+
     transaction = contract.constructor(contract_name, contract_symbol).build_transaction({
         'chainId': chain_id,
         'from': account.address,
         'nonce': w3.eth.get_transaction_count(account.address),
-        'gas': 2000000,
+        'gas': gas_limit,
         'gasPrice': w3.eth.gas_price
     })
-    
+
     signed_txn = w3.eth.account.sign_transaction(transaction, private_key=private_key)
     tx_hash = w3.eth.send_raw_transaction(signed_txn.raw_transaction)
     print(f"در حال دیپلوی قرارداد '{contract_name}'. هش تراکنش: {tx_hash.hex()}")
-    
+
     tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     contract_address = tx_receipt['contractAddress']
     print(f"قرارداد '{contract_name}' با موفقیت در آدرس {contract_address} دیپلوی شد.")
@@ -86,7 +91,7 @@ try:
         proxy_address = json.load(f)['InteractFeeProxy']
     with open('abis/InteractFeeProxy-ABI.json', 'r') as f:
         proxy_abi = json.load(f)
-    
+
     proxy_contract = w3.eth.contract(address=proxy_address, abi=proxy_abi)
 
     # --- ۳. تراکنش اول (interactWithFee) ---
@@ -97,7 +102,7 @@ try:
         'from': account.address,
         'nonce': w3.eth.get_transaction_count(account.address),
         'value': amount_to_send_wei,
-        'gas': 200000, 
+        'gas': 200000,
         'gasPrice': w3.eth.gas_price
     })
     signed_tx1 = w3.eth.account.sign_transaction(tx1, private_key=private_key)
@@ -122,12 +127,12 @@ try:
         print("تصمیم: دیپلوی قرارداد NFT (ERC721)...")
         nft_abi, nft_bytecode = compile_contract('contracts/MyNFT.sol', 'MyNFT')
         deploy_contract(w3, account, chain_id, nft_abi, nft_bytecode, random_name, random_name[:4].upper())
-        
+
     # --- ۵. تاخیر دوم و تراکنش سوم (Withdraw) ---
     delay2 = random.uniform(5, 20)
     print(f"\nتاخیر تصادفی برای {delay2:.2f} ثانیه...")
     time.sleep(delay2)
-    
+
     print("\n--- مرحله ۳: اجرای تراکنش 'withdrawEther' ---")
     tx3 = proxy_contract.functions.withdrawEther().build_transaction({
         'chainId': chain_id,
