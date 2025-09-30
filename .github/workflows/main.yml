@@ -10,6 +10,8 @@ on:
         type: string
   schedule:
     - cron: '23 7 * * *'
+    - cron: '31 9 * * *'
+    - cron: '52 11 * * *'
 
 jobs:
   run-transaction-cycle:
